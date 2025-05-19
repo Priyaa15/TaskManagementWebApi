@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TaskManagementApi.Data;
+using TaskManagementApi.DTOs;
 using TaskManagementApi.Models;
 
 namespace TaskManagementApi.Controllers
@@ -22,11 +23,25 @@ namespace TaskManagementApi.Controllers
 
         //Get : api/tasks
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Models.Task>>> GetTasks()
+        public async Task<ActionResult<IEnumerable<TaskReadDto>>> GetTasks()
         //Action result - wraps the response to return different error codes
         //representss collection of task objects from model task
         {
-            return await _context.Tasks.ToListAsync();
+            //return await _context.Tasks.ToListAsync();
+            
+            return await _context.Tasks
+                .Select(t => new TaskReadDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Description = t.Description,
+                    DueDate = t.DueDate,
+                    IsCompleted = t.IsCompleted,
+                    Priority = t.Priority
+                })
+                .ToListAsync();
+        
+            
             //_context.Task - refers to table in the db created in taskcontextdb class
             //ToListAsync(): 
             // Converts the query result into a list asynchronously.
@@ -41,39 +56,77 @@ namespace TaskManagementApi.Controllers
 
         }
 
-        //Get :api/tasks/5
+       // GET: api/tasks/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Models.Task>> GetTask(int id)
+        public async Task<ActionResult<TaskReadDto>> GetTask(int id)
         {
             var task = await _context.Tasks.FindAsync(id);
+
             if (task == null)
             {
                 return NotFound();
             }
-            return task;
+
+            return new TaskReadDto
+            {
+                Id = task.Id,
+                Title = task.Title,
+                Description = task.Description,
+                DueDate = task.DueDate,
+                IsCompleted = task.IsCompleted,
+                Priority = task.Priority
+            };
         }
 
-        //Post :api/tasks
+        // POST: api/tasks
         [HttpPost]
-        public async Task<ActionResult<Models.Task>> CreateTask(Models.Task task)
+        public async Task<ActionResult<TaskReadDto>> CreateTask(TaskCreateDto taskDto)
         {
+            var task = new Models.Task
+            {
+                Title = taskDto.Title,
+                Description = taskDto.Description,
+                DueDate = taskDto.DueDate,
+                IsCompleted = false, // New tasks are not completed by default
+                Priority = taskDto.Priority
+            };
+
             _context.Tasks.Add(task);
             await _context.SaveChangesAsync();
+
+            var readDto = new TaskReadDto
+            {
+                Id = task.Id,
+                Title = task.Title,
+                Description = task.Description,
+                DueDate = task.DueDate,
+                IsCompleted = task.IsCompleted,
+                Priority = task.Priority
+            };
+
             return CreatedAtAction(
                 nameof(GetTask),
                 new { id = task.Id },
-                task);
+                readDto);
         }
 
-        //Put: api/tasks/5
+        // PUT: api/tasks/5
         [HttpPut("{id}")]
-        public async Task<ActionResult> UpdateTask(int id, Models.Task task)
+        public async Task<IActionResult> UpdateTask(int id, TaskUpdateDto taskDto)
         {
-            if (id != task.Id)
+            var task = await _context.Tasks.FindAsync(id);
+            
+            if (task == null)
             {
-                return BadRequest();
+                return NotFound();
             }
-            _context.Entry(task).State = EntityState.Modified;
+
+            // Update the task properties
+            task.Title = taskDto.Title;
+            task.Description = taskDto.Description;
+            task.DueDate = taskDto.DueDate?? task.DueDate;
+            task.IsCompleted = taskDto.IsCompleted;
+            task.Priority = taskDto.Priority;
 
             try
             {
@@ -94,7 +147,7 @@ namespace TaskManagementApi.Controllers
             return NoContent();
         }
 
-         // DELETE: api/tasks/5
+        // DELETE: api/tasks/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTask(int id)
         {
@@ -109,7 +162,6 @@ namespace TaskManagementApi.Controllers
 
             return NoContent();
         }
-
 
         private bool TaskExists(int id)
         {
