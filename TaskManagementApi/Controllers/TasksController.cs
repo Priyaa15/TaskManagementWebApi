@@ -86,7 +86,7 @@ namespace TaskManagementApi.Controllers
             {
                 Title = taskDto.Title,
                 Description = taskDto.Description,
-                DueDate = taskDto.DueDate,
+                DueDate = taskDto.DueDate?? DateTime.Now,
                 IsCompleted = false, // New tasks are not completed by default
                 Priority = taskDto.Priority
             };

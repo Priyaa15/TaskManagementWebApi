@@ -11,7 +11,7 @@ builder.Services.AddControllers();
 // Add DbContext using SQL Server
 //Registers the controllers in the application, enabling the use of MVC or Web API patterns.
 builder.Services.AddDbContext<TaskDbContext>(options =>
-    options.UseSqlServer(
+    options.UseSqlite(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
